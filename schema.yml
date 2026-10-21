@@ -1,0 +1,1727 @@
+openapi: 3.0.3
+info:
+  title: JobNest API - Job Portal Backend
+  version: 1.0.0
+  description: A comprehensive RESTful API for JobNest Job Portal. Supports Candidate
+    and Employer authentication, role-based workflows, rich job postings, file uploads
+    (resumes & logos), and complete job application tracking.
+paths:
+  /api/applications/:
+    get:
+      operationId: applications_list
+      description: Returns applications. Candidates see their own applications; Employers
+        see applications for their posted jobs; Administrators see all applications.
+      summary: List applications
+      parameters:
+      - in: query
+        name: job
+        schema:
+          type: integer
+        description: Filter by Job ID
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter applications by status (e.g. PENDING, REVIEWED, SHORTLISTED,
+          ACCEPTED, REJECTED, WITHDRAWN)
+      tags:
+      - Applications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmployerApplicationDetail'
+          description: ''
+    post:
+      operationId: applications_create
+      description: Candidates can apply for an active job. Requires a PDF resume or
+        an existing candidate profile resume.
+      summary: Submit job application
+      tags:
+      - Applications
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ApplicationCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ApplicationCreateRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateApplicationDetail'
+          description: ''
+        '400':
+          description: Validation error (e.g. duplicate application or closed job).
+        '403':
+          description: Only candidates can apply.
+  /api/applications/{id}/:
+    get:
+      operationId: applications_retrieve
+      description: Retrieve application details. Candidates see application without
+        employer notes; Employers and Admins see full details with candidate profile
+        and notes.
+      summary: Get application details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Applications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerApplicationDetail'
+          description: ''
+    patch:
+      operationId: applications_partial_update
+      description: Candidates can update cover_letter or set status to WITHDRAWN.
+        Employers and Admins can update status and employer_notes.
+      summary: Update application
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Applications
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicationStatusUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicationStatusUpdateRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicationStatusUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerApplicationDetail'
+          description: ''
+        '403':
+          description: Forbidden
+    delete:
+      operationId: applications_destroy
+      description: Candidates can delete their application if it is still PENDING.
+        Administrators can delete anytime.
+      summary: Delete application
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Applications
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Application successfully deleted.
+        '403':
+          description: Permission denied.
+  /api/applications/{id}/status/:
+    patch:
+      operationId: applications_status_partial_update
+      description: Allows the job employer or admin to transition application status
+        (REVIEWED, SHORTLISTED, INTERVIEW, ACCEPTED, REJECTED) and record internal
+        notes.
+      summary: Update application recruitment status
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Applications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicationStatusUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicationStatusUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicationStatusUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerApplicationDetail'
+          description: ''
+        '403':
+          description: Permission denied. Only the employer who posted the job can
+            update status.
+  /api/auth/change-password/:
+    post:
+      operationId: auth_change_password_create
+      description: Verifies the current password and sets a new password.
+      summary: Change user password
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Password changed successfully.
+        '400':
+          description: Password validation error or incorrect current password.
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: Validates credentials and returns JWT access and refresh tokens
+        along with user information.
+      summary: User login
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: Login successful with tokens returned.
+        '400':
+          description: Invalid email or password.
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: Blacklists the provided refresh token to prevent further token
+        renewal.
+      summary: User logout
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Token blacklisted successfully. User logged out.
+        '400':
+          description: Invalid or missing refresh token.
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      description: Returns details of the currently authenticated user.
+      summary: Get current user details
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_me_partial_update
+      description: Updates basic profile info (first name, last name). Role, email,
+        and admin status cannot be modified here.
+      summary: Update current user details
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      description: Creates a new Candidate or Employer user account and issues JWT
+        tokens upon success.
+      summary: Register user account
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          description: User successfully registered with tokens.
+        '400':
+          description: Validation error (e.g., email already exists or passwords mismatch).
+  /api/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/candidates/me/:
+    get:
+      operationId: candidates_me_retrieve
+      description: Retrieves the detailed profile for the authenticated candidate
+        user.
+      summary: Get candidate profile
+      tags:
+      - Candidate Profile
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateProfile'
+          description: ''
+    patch:
+      operationId: candidates_me_partial_update
+      description: Updates candidate details, including skills, education, experience,
+        PDF resume, and profile photo.
+      summary: Update candidate profile
+      tags:
+      - Candidate Profile
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCandidateProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCandidateProfileRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCandidateProfileRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateProfile'
+          description: ''
+  /api/employers/me/:
+    get:
+      operationId: employers_me_retrieve
+      description: Retrieves company profile information for the authenticated employer
+        user.
+      summary: Get employer profile
+      tags:
+      - Employer Profile
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerProfile'
+          description: ''
+    patch:
+      operationId: employers_me_partial_update
+      description: Updates company details, website, description, and company logo.
+      summary: Update employer profile
+      tags:
+      - Employer Profile
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEmployerProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEmployerProfileRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEmployerProfileRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerProfile'
+          description: ''
+  /api/jobs/:
+    get:
+      operationId: jobs_list
+      description: Browse active job postings. Supports search, filtering, and ordering.
+        Employers can view their own listings with ?my_jobs=true.
+      summary: List job postings
+      parameters:
+      - in: query
+        name: company
+        schema:
+          type: string
+      - in: query
+        name: employment_type
+        schema:
+          type: string
+          enum:
+          - CONTRACT
+          - FREELANCE
+          - FULL_TIME
+          - INTERNSHIP
+          - PART_TIME
+        description: |-
+          * `FULL_TIME` - Full-time
+          * `PART_TIME` - Part-time
+          * `CONTRACT` - Contract
+          * `INTERNSHIP` - Internship
+          * `FREELANCE` - Freelance
+      - in: query
+        name: experience_level
+        schema:
+          type: string
+          enum:
+          - ENTRY
+          - EXECUTIVE
+          - LEAD
+          - MID
+          - SENIOR
+        description: |-
+          * `ENTRY` - Entry Level
+          * `MID` - Mid Level
+          * `SENIOR` - Senior Level
+          * `LEAD` - Lead
+          * `EXECUTIVE` - Executive
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: location
+        schema:
+          type: string
+      - in: query
+        name: max_salary
+        schema:
+          type: number
+      - in: query
+        name: min_salary
+        schema:
+          type: number
+      - in: query
+        name: my_jobs
+        schema:
+          type: boolean
+        description: Filter to only jobs posted by the authenticated employer (boolean)
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: remote_status
+        schema:
+          type: string
+          enum:
+          - HYBRID
+          - ONSITE
+          - REMOTE
+        description: |-
+          * `ONSITE` - On-site
+          * `HYBRID` - Hybrid
+          * `REMOTE` - Remote
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search terms in title, description, skills, location, or company
+          name
+      - in: query
+        name: title
+        schema:
+          type: string
+      tags:
+      - Jobs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedJobListList'
+          description: ''
+    post:
+      operationId: jobs_create
+      description: Creates a new job listing. Available only to authenticated Employers
+        and Administrators.
+      summary: Create a new job posting
+      tags:
+      - Jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCreateUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/JobCreateUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/JobCreateUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetail'
+          description: ''
+        '403':
+          description: Permission denied. Only employers can create jobs.
+  /api/jobs/{job_id}/applications/:
+    get:
+      operationId: jobs_applications_list
+      description: Retrieve all applications submitted for a specific job listing.
+        Available only to the employer who posted the job or administrators.
+      summary: List applications for a specific job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by application status
+      tags:
+      - Jobs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmployerApplicationDetail'
+          description: ''
+        '403':
+          description: Permission denied. You can only view applications for your
+            own job postings.
+  /api/jobs/{id}/:
+    get:
+      operationId: jobs_retrieve
+      description: Retrieve full details for a specific job posting. Public users
+        can view active jobs; only the employer owner or admin can view inactive jobs.
+      summary: Get job details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Job.
+        required: true
+      tags:
+      - Jobs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetail'
+          description: ''
+        '404':
+          description: Job not found or access denied.
+    put:
+      operationId: jobs_update
+      description: Completely update a job listing. Available only to the employer
+        who created it or an administrator.
+      summary: Update a job posting
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Job.
+        required: true
+      tags:
+      - Jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCreateUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/JobCreateUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/JobCreateUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetail'
+          description: ''
+        '403':
+          description: Permission denied.
+    patch:
+      operationId: jobs_partial_update
+      description: Partially update fields of a job listing. Available only to the
+        employer who created it or an administrator.
+      summary: Partially update a job posting
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Job.
+        required: true
+      tags:
+      - Jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedJobCreateUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedJobCreateUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedJobCreateUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetail'
+          description: ''
+        '403':
+          description: Permission denied.
+    delete:
+      operationId: jobs_destroy
+      description: Deletes a job listing. Available only to the employer who created
+        it or an administrator.
+      summary: Delete a job posting
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Job.
+        required: true
+      tags:
+      - Jobs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Job successfully deleted.
+        '403':
+          description: Permission denied.
+components:
+  schemas:
+    ApplicationCreateRequest:
+      type: object
+      description: Serializer for Candidates submitting a job application.
+      properties:
+        job:
+          type: integer
+        resume:
+          type: string
+          format: binary
+          nullable: true
+        cover_letter:
+          type: string
+          description: Cover letter or introduction note.
+      required:
+      - job
+    CandidateApplicationDetail:
+      type: object
+      description: Application representation for candidates (hides confidential employer
+        notes).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        job:
+          allOf:
+          - $ref: '#/components/schemas/JobNested'
+          readOnly: true
+        resume:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: Custom resume submitted with this application (PDF only, max
+            5MB).
+        resume_url:
+          type: string
+          readOnly: true
+        cover_letter:
+          type: string
+          readOnly: true
+          description: Cover letter or introduction note.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+          description: |-
+            Current recruitment stage for this application.
+
+            * `PENDING` - Pending
+            * `REVIEWED` - Reviewed
+            * `SHORTLISTED` - Shortlisted
+            * `INTERVIEW` - Interview
+            * `ACCEPTED` - Accepted
+            * `REJECTED` - Rejected
+            * `WITHDRAWN` - Withdrawn
+        applied_date:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_date:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - applied_date
+      - cover_letter
+      - id
+      - job
+      - resume
+      - resume_url
+      - status
+      - updated_date
+    CandidateNested:
+      type: object
+      description: Candidate details displayed to employers reviewing an application.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        phone_number:
+          type: string
+          readOnly: true
+        location:
+          type: string
+          readOnly: true
+        skills:
+          type: string
+          readOnly: true
+        education:
+          type: string
+          readOnly: true
+        experience:
+          type: string
+          readOnly: true
+        profile_picture:
+          type: string
+          readOnly: true
+      required:
+      - education
+      - email
+      - experience
+      - full_name
+      - id
+      - location
+      - phone_number
+      - profile_picture
+      - skills
+    CandidateProfile:
+      type: object
+      description: Serializer for retrieving and updating Candidate Profiles.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        full_name:
+          type: string
+          maxLength: 255
+        phone_number:
+          type: string
+          maxLength: 20
+        location:
+          type: string
+          maxLength: 255
+        skills:
+          type: string
+          description: Comma-separated or multi-line skills (e.g., Python, Django,
+            Docker, PostgreSQL).
+        education:
+          type: string
+          description: Degrees, universities, graduation years.
+        experience:
+          type: string
+          description: Work experience history, previous roles and accomplishments.
+        resume:
+          type: string
+          format: uri
+          nullable: true
+          description: PDF resume file (max 5MB).
+        profile_picture:
+          type: string
+          format: uri
+          nullable: true
+          description: Profile photo (JPG, PNG, WebP, max 2MB).
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - id
+      - updated_at
+      - user_id
+    ChangePasswordRequest:
+      type: object
+      description: Serializer for changing user password.
+      properties:
+        old_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        new_password_confirm:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - new_password
+      - new_password_confirm
+      - old_password
+    EmployerApplicationDetail:
+      type: object
+      description: Application representation for employers & admins (includes candidate
+        details and internal notes).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        job:
+          allOf:
+          - $ref: '#/components/schemas/JobNested'
+          readOnly: true
+        candidate_details:
+          allOf:
+          - $ref: '#/components/schemas/CandidateNested'
+          readOnly: true
+        resume:
+          type: string
+          format: uri
+          nullable: true
+          description: Custom resume submitted with this application (PDF only, max
+            5MB).
+        resume_url:
+          type: string
+          readOnly: true
+        cover_letter:
+          type: string
+          description: Cover letter or introduction note.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          description: |-
+            Current recruitment stage for this application.
+
+            * `PENDING` - Pending
+            * `REVIEWED` - Reviewed
+            * `SHORTLISTED` - Shortlisted
+            * `INTERVIEW` - Interview
+            * `ACCEPTED` - Accepted
+            * `REJECTED` - Rejected
+            * `WITHDRAWN` - Withdrawn
+        employer_notes:
+          type: string
+          description: Private internal notes visible only to the employer and administrators.
+        applied_date:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_date:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - applied_date
+      - candidate_details
+      - id
+      - job
+      - resume_url
+      - updated_date
+    EmployerProfile:
+      type: object
+      description: Serializer for retrieving and updating Employer Profiles.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        company_name:
+          type: string
+          maxLength: 255
+        company_description:
+          type: string
+        website:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 500
+          - type: string
+            maxLength: 0
+        company_location:
+          type: string
+          maxLength: 255
+        company_logo:
+          type: string
+          format: uri
+          nullable: true
+          description: Company logo image (JPG, PNG, WebP, max 2MB).
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - id
+      - updated_at
+      - user_id
+    EmploymentTypeEnum:
+      enum:
+      - FULL_TIME
+      - PART_TIME
+      - CONTRACT
+      - INTERNSHIP
+      - FREELANCE
+      type: string
+      description: |-
+        * `FULL_TIME` - Full-time
+        * `PART_TIME` - Part-time
+        * `CONTRACT` - Contract
+        * `INTERNSHIP` - Internship
+        * `FREELANCE` - Freelance
+    ExperienceLevelEnum:
+      enum:
+      - ENTRY
+      - MID
+      - SENIOR
+      - LEAD
+      - EXECUTIVE
+      type: string
+      description: |-
+        * `ENTRY` - Entry Level
+        * `MID` - Mid Level
+        * `SENIOR` - Senior Level
+        * `LEAD` - Lead
+        * `EXECUTIVE` - Executive
+    JobCreateUpdateRequest:
+      type: object
+      description: Serializer for creating and updating job postings by Employers.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          description: e.g. Senior Backend Engineer (Django/Python)
+          maxLength: 255
+        description:
+          type: string
+          minLength: 1
+          description: Detailed overview of the role.
+        responsibilities:
+          type: string
+          description: Day-to-day responsibilities.
+        required_skills:
+          type: string
+          description: List or comma-separated required skills.
+        qualifications:
+          type: string
+          description: Minimum degrees or experience required.
+        employment_type:
+          $ref: '#/components/schemas/EmploymentTypeEnum'
+        experience_level:
+          $ref: '#/components/schemas/ExperienceLevelEnum'
+        salary_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: Minimum annual or monthly salary.
+        salary_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: Maximum annual or monthly salary.
+        location:
+          type: string
+          minLength: 1
+          description: e.g. San Francisco, CA or Remote
+          maxLength: 255
+        remote_status:
+          $ref: '#/components/schemas/RemoteStatusEnum'
+        number_of_openings:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        application_deadline:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+          description: Whether this job posting is currently open for applications.
+      required:
+      - description
+      - location
+      - title
+    JobDetail:
+      type: object
+      description: Full detail serializer for retrieving single job postings.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          description: e.g. Senior Backend Engineer (Django/Python)
+          maxLength: 255
+        description:
+          type: string
+          description: Detailed overview of the role.
+        responsibilities:
+          type: string
+          description: Day-to-day responsibilities.
+        required_skills:
+          type: string
+          description: List or comma-separated required skills.
+        qualifications:
+          type: string
+          description: Minimum degrees or experience required.
+        employment_type:
+          $ref: '#/components/schemas/EmploymentTypeEnum'
+        experience_level:
+          $ref: '#/components/schemas/ExperienceLevelEnum'
+        remote_status:
+          $ref: '#/components/schemas/RemoteStatusEnum'
+        location:
+          type: string
+          description: e.g. San Francisco, CA or Remote
+          maxLength: 255
+        salary_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: Minimum annual or monthly salary.
+        salary_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: Maximum annual or monthly salary.
+        number_of_openings:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        application_deadline:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+          description: Whether this job posting is currently open for applications.
+        is_open:
+          type: boolean
+          readOnly: true
+        employer_info:
+          allOf:
+          - $ref: '#/components/schemas/JobEmployerInfo'
+          readOnly: true
+        applications_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - applications_count
+      - created_at
+      - description
+      - employer_info
+      - id
+      - is_open
+      - location
+      - title
+      - updated_at
+    JobEmployerInfo:
+      type: object
+      description: Nested serializer displaying employer company details for a job.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        company_name:
+          type: string
+          readOnly: true
+        company_location:
+          type: string
+          readOnly: true
+        website:
+          type: string
+          readOnly: true
+        logo:
+          type: string
+          readOnly: true
+      required:
+      - company_location
+      - company_name
+      - email
+      - id
+      - logo
+      - website
+    JobList:
+      type: object
+      description: Compact serializer for listing jobs.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          description: e.g. Senior Backend Engineer (Django/Python)
+          maxLength: 255
+        company_name:
+          type: string
+          readOnly: true
+        company_logo:
+          type: string
+          readOnly: true
+        employment_type:
+          $ref: '#/components/schemas/EmploymentTypeEnum'
+        experience_level:
+          $ref: '#/components/schemas/ExperienceLevelEnum'
+        remote_status:
+          $ref: '#/components/schemas/RemoteStatusEnum'
+        location:
+          type: string
+          description: e.g. San Francisco, CA or Remote
+          maxLength: 255
+        salary_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: Minimum annual or monthly salary.
+        salary_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: Maximum annual or monthly salary.
+        number_of_openings:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        application_deadline:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+          description: Whether this job posting is currently open for applications.
+        is_open:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - company_logo
+      - company_name
+      - created_at
+      - id
+      - is_open
+      - location
+      - title
+    JobNested:
+      type: object
+      description: Compact job information for applications.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          description: e.g. Senior Backend Engineer (Django/Python)
+          maxLength: 255
+        company_name:
+          type: string
+          readOnly: true
+        location:
+          type: string
+          description: e.g. San Francisco, CA or Remote
+          maxLength: 255
+        employment_type:
+          $ref: '#/components/schemas/EmploymentTypeEnum'
+        remote_status:
+          $ref: '#/components/schemas/RemoteStatusEnum'
+        salary_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: Minimum annual or monthly salary.
+        salary_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: Maximum annual or monthly salary.
+        is_active:
+          type: boolean
+          description: Whether this job posting is currently open for applications.
+      required:
+      - company_name
+      - id
+      - location
+      - title
+    LoginRequest:
+      type: object
+      description: Serializer for authenticating users and issuing JWT tokens.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    LogoutRequest:
+      type: object
+      description: Serializer to blacklist refresh tokens upon logout.
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+          description: The refresh token to invalidate.
+      required:
+      - refresh
+    PaginatedJobListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobList'
+    PatchedApplicationStatusUpdateRequest:
+      type: object
+      description: Serializer specifically for employers and admins to update application
+        status and notes.
+      properties:
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          description: |-
+            Current recruitment stage for this application.
+
+            * `PENDING` - Pending
+            * `REVIEWED` - Reviewed
+            * `SHORTLISTED` - Shortlisted
+            * `INTERVIEW` - Interview
+            * `ACCEPTED` - Accepted
+            * `REJECTED` - Rejected
+            * `WITHDRAWN` - Withdrawn
+        employer_notes:
+          type: string
+          description: Private internal notes visible only to the employer and administrators.
+    PatchedCandidateProfileRequest:
+      type: object
+      description: Serializer for retrieving and updating Candidate Profiles.
+      properties:
+        full_name:
+          type: string
+          maxLength: 255
+        phone_number:
+          type: string
+          maxLength: 20
+        location:
+          type: string
+          maxLength: 255
+        skills:
+          type: string
+          description: Comma-separated or multi-line skills (e.g., Python, Django,
+            Docker, PostgreSQL).
+        education:
+          type: string
+          description: Degrees, universities, graduation years.
+        experience:
+          type: string
+          description: Work experience history, previous roles and accomplishments.
+        resume:
+          type: string
+          format: binary
+          nullable: true
+          description: PDF resume file (max 5MB).
+        profile_picture:
+          type: string
+          format: binary
+          nullable: true
+          description: Profile photo (JPG, PNG, WebP, max 2MB).
+    PatchedEmployerProfileRequest:
+      type: object
+      description: Serializer for retrieving and updating Employer Profiles.
+      properties:
+        company_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        company_description:
+          type: string
+        website:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 500
+          - type: string
+            maxLength: 0
+        company_location:
+          type: string
+          maxLength: 255
+        company_logo:
+          type: string
+          format: binary
+          nullable: true
+          description: Company logo image (JPG, PNG, WebP, max 2MB).
+    PatchedJobCreateUpdateRequest:
+      type: object
+      description: Serializer for creating and updating job postings by Employers.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          description: e.g. Senior Backend Engineer (Django/Python)
+          maxLength: 255
+        description:
+          type: string
+          minLength: 1
+          description: Detailed overview of the role.
+        responsibilities:
+          type: string
+          description: Day-to-day responsibilities.
+        required_skills:
+          type: string
+          description: List or comma-separated required skills.
+        qualifications:
+          type: string
+          description: Minimum degrees or experience required.
+        employment_type:
+          $ref: '#/components/schemas/EmploymentTypeEnum'
+        experience_level:
+          $ref: '#/components/schemas/ExperienceLevelEnum'
+        salary_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: Minimum annual or monthly salary.
+        salary_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: Maximum annual or monthly salary.
+        location:
+          type: string
+          minLength: 1
+          description: e.g. San Francisco, CA or Remote
+          maxLength: 255
+        remote_status:
+          $ref: '#/components/schemas/RemoteStatusEnum'
+        number_of_openings:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        application_deadline:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+          description: Whether this job posting is currently open for applications.
+    PatchedUserUpdateRequest:
+      type: object
+      description: Serializer for updating personal details without modifying role
+        or privileges.
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+    RemoteStatusEnum:
+      enum:
+      - ONSITE
+      - HYBRID
+      - REMOTE
+      type: string
+      description: |-
+        * `ONSITE` - On-site
+        * `HYBRID` - Hybrid
+        * `REMOTE` - Remote
+    StatusEnum:
+      enum:
+      - PENDING
+      - REVIEWED
+      - SHORTLISTED
+      - INTERVIEW
+      - ACCEPTED
+      - REJECTED
+      - WITHDRAWN
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `REVIEWED` - Reviewed
+        * `SHORTLISTED` - Shortlisted
+        * `INTERVIEW` - Interview
+        * `ACCEPTED` - Accepted
+        * `REJECTED` - Rejected
+        * `WITHDRAWN` - Withdrawn
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    User:
+      type: object
+      description: Public representation of the User model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: Email address
+          description: Unique email address used for login.
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        full_name:
+          type: string
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/UserRoleEnum'
+          readOnly: true
+          description: |-
+            User role defining access permissions.
+
+            * `CANDIDATE` - Candidate
+            * `EMPLOYER` - Employer
+            * `ADMIN` - Admin
+        is_active:
+          type: boolean
+          readOnly: true
+          description: Designates whether this user should be treated as active.
+        is_staff:
+          type: boolean
+          readOnly: true
+          description: Designates whether the user can log into the Django admin site.
+        is_superuser:
+          type: boolean
+          readOnly: true
+          description: Designates whether the user has all permissions without explicitly
+            assigning them.
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date_joined
+      - email
+      - full_name
+      - id
+      - is_active
+      - is_staff
+      - is_superuser
+      - role
+    UserRegistrationRequest:
+      type: object
+      description: Serializer for registering a new Candidate or Employer.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: Email address
+          description: Unique email address used for login.
+          maxLength: 255
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          allOf:
+          - $ref: '#/components/schemas/UserRegistrationRoleEnum'
+          default: CANDIDATE
+          description: |-
+            Account role: CANDIDATE or EMPLOYER. (ADMIN registration is restricted).
+
+            * `CANDIDATE` - CANDIDATE
+            * `EMPLOYER` - EMPLOYER
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          description: At least 8 characters long.
+        password_confirm:
+          type: string
+          writeOnly: true
+          minLength: 1
+          description: Must match password exactly.
+        company_name:
+          type: string
+          writeOnly: true
+        full_name:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - password
+      - password_confirm
+    UserRegistrationRoleEnum:
+      enum:
+      - CANDIDATE
+      - EMPLOYER
+      type: string
+      description: |-
+        * `CANDIDATE` - CANDIDATE
+        * `EMPLOYER` - EMPLOYER
+    UserRoleEnum:
+      enum:
+      - CANDIDATE
+      - EMPLOYER
+      - ADMIN
+      type: string
+      description: |-
+        * `CANDIDATE` - Candidate
+        * `EMPLOYER` - Employer
+        * `ADMIN` - Admin
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,690 @@
+{
+  "info": {
+    "name": "JobNest Backend API Collection",
+    "_postman_id": "jobnest-backend-api-v1",
+    "description": "Complete Postman collection for JobNest Job Portal REST API including Admin, Employer, and Candidate authentication, profiles, jobs CRUD, and application workflow with automated token capture.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "candidateAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employerAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "jobId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "1. Register Candidate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.tokens && jsonData.tokens.access) {",
+                  "    pm.collectionVariables.set('candidateAccessToken', jsonData.tokens.access);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.tokens.refresh);",
+                  "    console.log('Candidate token automatically saved!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate@jobnest.com\",\n  \"password\": \"SecurePass123!\",\n  \"password_confirm\": \"SecurePass123!\",\n  \"role\": \"CANDIDATE\",\n  \"first_name\": \"Alex\",\n  \"last_name\": \"Morgan\",\n  \"full_name\": \"Alex Morgan\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register", ""]
+            }
+          }
+        },
+        {
+          "name": "2. Register Employer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.tokens && jsonData.tokens.access) {",
+                  "    pm.collectionVariables.set('employerAccessToken', jsonData.tokens.access);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.tokens.refresh);",
+                  "    console.log('Employer token automatically saved!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"employer@techcorp.com\",\n  \"password\": \"SecurePass123!\",\n  \"password_confirm\": \"SecurePass123!\",\n  \"role\": \"EMPLOYER\",\n  \"first_name\": \"Sarah\",\n  \"last_name\": \"Connor\",\n  \"company_name\": \"TechCorp Global\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register", ""]
+            }
+          }
+        },
+        {
+          "name": "3. Login (Candidate)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.tokens && jsonData.tokens.access) {",
+                  "    pm.collectionVariables.set('candidateAccessToken', jsonData.tokens.access);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.tokens.refresh);",
+                  "    console.log('Candidate token updated!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate@jobnest.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login", ""]
+            }
+          }
+        },
+        {
+          "name": "4. Login (Employer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.tokens && jsonData.tokens.access) {",
+                  "    pm.collectionVariables.set('employerAccessToken', jsonData.tokens.access);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.tokens.refresh);",
+                  "    console.log('Employer token updated!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"employer@techcorp.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login", ""]
+            }
+          }
+        },
+        {
+          "name": "5. Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.tokens && jsonData.tokens.access) {",
+                  "    pm.collectionVariables.set('adminAccessToken', jsonData.tokens.access);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.tokens.refresh);",
+                  "    console.log('Admin token updated!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@jobnest.com\",\n  \"password\": \"AdminPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login", ""]
+            }
+          }
+        },
+        {
+          "name": "6. Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access) {",
+                  "    pm.collectionVariables.set('candidateAccessToken', jsonData.access);",
+                  "    console.log('Access token renewed successfully!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/token/refresh/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "token", "refresh", ""]
+            }
+          }
+        },
+        {
+          "name": "7. Logout (Blacklist Token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{candidateAccessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout", ""]
+            }
+          }
+        },
+        {
+          "name": "8. Get Current User (Me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{candidateAccessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me", ""]
+            }
+          }
+        },
+        {
+          "name": "9. Update User Info (Me)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{candidateAccessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Alexander\",\n  \"last_name\": \"Morgan\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me", ""]
+            }
+          }
+        },
+        {
+          "name": "10. Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{candidateAccessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"SecurePass123!\",\n  \"new_password\": \"NewSecretPass2026!\",\n  \"new_password_confirm\": \"NewSecretPass2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/change-password/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "change-password", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Profile Management",
+      "item": [
+        {
+          "name": "1. Get Candidate Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{candidateAccessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/candidates/me/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "candidates", "me", ""]
+            }
+          }
+        },
+        {
+          "name": "2. Update Candidate Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{candidateAccessToken}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "full_name", "value": "Alex Morgan", "type": "text" },
+                { "key": "phone_number", "value": "+1-555-0199", "type": "text" },
+                { "key": "location", "value": "Austin, TX", "type": "text" },
+                { "key": "skills", "value": "Python, Django, PostgreSQL, Docker, Redis", "type": "text" },
+                { "key": "education", "value": "B.S. Software Engineering, MIT 2024", "type": "text" },
+                { "key": "experience", "value": "3 years backend engineering in SaaS", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/candidates/me/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "candidates", "me", ""]
+            }
+          }
+        },
+        {
+          "name": "3. Get Employer Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerAccessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employers/me/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employers", "me", ""]
+            }
+          }
+        },
+        {
+          "name": "4. Update Employer Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerAccessToken}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "company_name", "value": "TechCorp Global Innovations", "type": "text" },
+                { "key": "company_description", "value": "Leading AI and cloud engineering consultancy.", "type": "text" },
+                { "key": "website", "value": "https://techcorp.example.com", "type": "text" },
+                { "key": "company_location", "value": "San Francisco, CA", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employers/me/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employers", "me", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Job Management",
+      "item": [
+        {
+          "name": "1. Browse Public Active Jobs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", ""]
+            }
+          }
+        },
+        {
+          "name": "2. Search & Filter Jobs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/?search=Django&remote_status=REMOTE&employment_type=FULL_TIME",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", ""],
+              "query": [
+                { "key": "search", "value": "Django" },
+                { "key": "remote_status", "value": "REMOTE" },
+                { "key": "employment_type", "value": "FULL_TIME" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Create Job (Employer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set('jobId', jsonData.id.toString());",
+                  "    console.log('Job ID automatically saved:', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{employerAccessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Django Backend Engineer\",\n  \"description\": \"We are looking for a senior backend engineer to lead our core API services.\",\n  \"responsibilities\": \"Architect REST APIs, design database schemas, write unit and integration tests.\",\n  \"required_skills\": \"Python, Django, Django REST Framework, PostgreSQL, Docker\",\n  \"qualifications\": \"4+ years of backend engineering experience\",\n  \"employment_type\": \"FULL_TIME\",\n  \"experience_level\": \"SENIOR\",\n  \"salary_min\": \"120000.00\",\n  \"salary_max\": \"155000.00\",\n  \"location\": \"San Francisco, CA\",\n  \"remote_status\": \"REMOTE\",\n  \"number_of_openings\": 2,\n  \"application_deadline\": \"2026-12-31\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", ""]
+            }
+          }
+        },
+        {
+          "name": "4. Get Job Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/{{jobId}}/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "{{jobId}}", ""]
+            }
+          }
+        },
+        {
+          "name": "5. Update Job (Employer)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{employerAccessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salary_max\": \"165000.00\",\n  \"number_of_openings\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/{{jobId}}/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "{{jobId}}", ""]
+            }
+          }
+        },
+        {
+          "name": "6. Delete Job (Employer)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerAccessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/{{jobId}}/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "{{jobId}}", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Job Applications",
+      "item": [
+        {
+          "name": "1. Submit Job Application (Candidate)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set('applicationId', jsonData.id.toString());",
+                  "    console.log('Application ID saved:', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{candidateAccessToken}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "job", "value": "{{jobId}}", "type": "text" },
+                { "key": "cover_letter", "value": "I am thrilled to apply for this position. My background in Python/Django aligns directly with your mission.", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/applications/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications", ""]
+            }
+          }
+        },
+        {
+          "name": "2. List Applications (Role Filtered)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{candidateAccessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/applications/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications", ""]
+            }
+          }
+        },
+        {
+          "name": "3. Get Application Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{candidateAccessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/applications/{{applicationId}}/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications", "{{applicationId}}", ""]
+            }
+          }
+        },
+        {
+          "name": "4. Withdraw Application (Candidate)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{candidateAccessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"WITHDRAWN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/applications/{{applicationId}}/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications", "{{applicationId}}", ""]
+            }
+          }
+        },
+        {
+          "name": "5. Update Application Status (Employer)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{employerAccessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INTERVIEW\",\n  \"employer_notes\": \"Passed initial code evaluation. Scheduled for architectural system interview.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/applications/{{applicationId}}/status/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications", "{{applicationId}}", "status", ""]
+            }
+          }
+        },
+        {
+          "name": "6. Get Applications for Specific Job (Employer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerAccessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/{{jobId}}/applications/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "{{jobId}}", "applications", ""]
+            }
+          }
+        },
+        {
+          "name": "7. Cancel Pending Application (Candidate)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{candidateAccessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/applications/{{applicationId}}/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications", "{{applicationId}}", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Documentation & Schema",
+      "item": [
+        {
+          "name": "1. Get OpenAPI 3.0 Schema",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/schema/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schema", ""]
+            }
+          }
+        },
+        {
+          "name": "2. Swagger UI Documentation",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/docs/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "docs", ""]
+            }
+          }
+        },
+        {
+          "name": "3. ReDoc Documentation",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/redoc/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "redoc", ""]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
